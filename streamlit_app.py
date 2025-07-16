@@ -74,7 +74,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v18")
+st.markdown("Version: v19")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -217,51 +217,54 @@ with st.form(key="edit_form"):
 if submit:
     st.session_state.df_nomenclature = edited_df
 
-    # Sauvegarde des anciens paramètres pour ne pas perdre les interp_points
     anciens_params = st.session_state.get("comp_params", {}).copy()
-    st.session_state.comp_params = {}
+    new_comp_params = {}
 
     for _, row in edited_df.iterrows():
         if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
-            continue  # Ignore les lignes vides
+            continue
 
         comp_key = get_comp_key(row)
         loi = str(row.get("Loi spécifique", "Global")).strip()
 
-        st.session_state.comp_params[comp_key] = {
+        # Construction de base
+        comp_data = {
             "law": loi,
             "prix_matiere": row.get("Prix matière (€/kg)", None),
             "cout_moule": row.get("Coût moule (€)", None),
-            "masse": row.get("Masse (kg)", None)
+            "masse": row.get("Masse (kg)", None),
         }
 
+        # Si Interpolation, ajouter les points (anciens ou défaut)
         if loi.lower() == "interpolation":
             if (
                 comp_key in anciens_params
                 and "interp_points" in anciens_params[comp_key]
+                and isinstance(anciens_params[comp_key]["interp_points"], list)
             ):
-                # Conserver les anciens points s'ils existent
-                st.session_state.comp_params[comp_key]["interp_points"] = anciens_params[comp_key]["interp_points"]
+                comp_data["interp_points"] = anciens_params[comp_key]["interp_points"]
             else:
-                # Sinon, initialiser avec valeurs par défaut
                 try:
                     prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
                     quantite = float(row.get("Quantité / Véhicule", 1.0))
                     prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
                 except:
                     prix_base = 1.0
-
-                st.session_state.comp_params[comp_key]["interp_points"] = [
+                comp_data["interp_points"] = [
                     [1, round(prix_base, 2)],
                     [1000, round(prix_base * 0.5, 2)]
                 ]
 
-    # Sauvegarde vers Google Sheets
+        new_comp_params[comp_key] = comp_data
+
+    st.session_state.comp_params = new_comp_params
+
     try:
         sauvegarder_parametres_gsheet()
         st.success("Modifications sauvegardées dans Google Sheets !")
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
+
 
 else:
     edited_df = st.session_state.df_nomenclature
