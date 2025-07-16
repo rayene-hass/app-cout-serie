@@ -249,9 +249,6 @@ if submit:
         st.success("Modifications sauvegardées dans Google Sheets !")
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
-else:
-    edited_df = st.session_state.df_nomenclature
-
 
 else:
     edited_df = st.session_state.df_nomenclature
