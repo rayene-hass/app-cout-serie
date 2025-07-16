@@ -74,7 +74,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v19")
+st.markdown("Version: v21")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -224,15 +224,17 @@ if submit:
             continue  # Ignorer lignes vides
 
         comp_key = get_comp_key(row)
+        previous = st.session_state.comp_params.get(comp_key, {})
         st.session_state.comp_params[comp_key] = {
             "law": str(row.get("Loi spécifique", "Global")),
             "prix_matiere": row.get("Prix matière (€/kg)", None),
             "cout_moule": row.get("Coût moule (€)", None),
-            "masse": row.get("Masse (kg)", None)
+            "masse": row.get("Masse (kg)", None),
+            "interp_points": previous.get("interp_points", [])
         }
 
         if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
-            if "interp_points" not in st.session_state.comp_params[comp_key]:
+            if not st.session_state.comp_params[comp_key]["interp_points"]:
                 try:
                     prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
                     quantite = float(row.get("Quantité / Véhicule", 1.0))
