@@ -8,7 +8,6 @@ from google.oauth2.service_account import Credentials
 import json
 
 def sauvegarder_parametres_gsheet():
-
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
     client = gspread.authorize(creds)
@@ -23,30 +22,49 @@ def sauvegarder_parametres_gsheet():
     for _, row in df.iterrows():
         comp_key = f"{row.get('Ensemble','')}/{row.get('Sous-Ensemble','')}/{row.get('Composant','')}/{row.get('Fournisseur','')}".strip().lower()
         params = comp_params.get(comp_key, {})
-        cleaned_points = []
-        for pair in params.get("interp_points", []):
+
+        # Nettoyage robuste des points
+        raw_points = params.get("interp_points", [])
+        if isinstance(raw_points, str):
             try:
-                if (
-                    isinstance(pair, (list, tuple))
-                    and len(pair) == 2
-                    and not pd.isna(pair[0]) and not pd.isna(pair[1])
-                    and math.isfinite(float(pair[0])) and math.isfinite(float(pair[1]))
-                ):
-                    cleaned_points.append([float(pair[0]), float(pair[1])])
+                raw_points = json.loads(raw_points)
+            except Exception:
+                raw_points = []
+
+        cleaned_points = []
+        for pair in raw_points:
+            try:
+                if isinstance(pair, (list, tuple)) and len(pair) == 2:
+                    q, p = float(pair[0]), float(pair[1])
+                    if math.isfinite(q) and math.isfinite(p):
+                        cleaned_points.append([q, p])
             except Exception:
                 continue
+
+        # Nettoyage des champs numériques
+        def clean_numeric(val):
+            try:
+                val = float(val)
+                return val if math.isfinite(val) else None
+            except:
+                return None
+
         sauvegarde.append({
             "comp_key": comp_key,
             "law": row.get("Loi spécifique", "Global"),
-            "prix_matiere": row.get("Prix matière (€/kg)", None),
-            "cout_moule": row.get("Coût moule (€)", None),
-            "masse": row.get("Masse (kg)", None),            
+            "prix_matiere": clean_numeric(row.get("Prix matière (€/kg)", None)),
+            "cout_moule": clean_numeric(row.get("Coût moule (€)", None)),
+            "masse": clean_numeric(row.get("Masse (kg)", None)),
             "interp_points": json.dumps(cleaned_points)
-            })
+        })
 
-    # Ecrasement de toutes les anciennes données du worksheet
+    if not sauvegarde:
+        st.warning("Aucune donnée à sauvegarder.")
+        return
+
     worksheet.clear()
     worksheet.update([list(sauvegarde[0].keys())] + [list(d.values()) for d in sauvegarde])
+
 
 
 def get_comp_key(row):
@@ -56,7 +74,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v15")
+st.markdown("Version: v16")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
