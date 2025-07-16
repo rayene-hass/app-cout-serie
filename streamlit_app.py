@@ -44,7 +44,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v4")
+st.markdown("Version: v5")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -81,21 +81,6 @@ def charger_nomenclature_gsheet():
         df.rename(columns={"Coût moule": "Coût moule (€)"}, inplace=True)
     if "Coût moule (€)" not in df.columns:
         df["Coût moule (€)"] = None
-
-    # Conversion propre des colonnes numériques avec virgules en points
-    colonnes_a_corriger = ["Masse (kg)", "Prix matière (€/kg)", "Coût moule (€)", "Prix Effectif / Véhicule"]
-    for col in colonnes_a_corriger:
-        if col in df.columns:
-            df[col] = (
-                df[col]
-                .astype(str)
-                .str.replace(",", ".", regex=False)
-                .str.replace("€", "", regex=False)
-                .str.replace(" ", "", regex=False)
-                .str.strip()
-            )
-            df[col] = pd.to_numeric(df[col], errors="coerce")
-
 
     return df
 
