@@ -6,6 +6,23 @@ import json
 import gspread
 from google.oauth2.service_account import Credentials
 import json
+import re
+
+def nettoyer_valeur_numerique(valeur):
+    if valeur is None:
+        return None
+    valeur_str = str(valeur)
+    # Supprimer tout sauf chiffres, virgule, point, et moins
+    valeur_str = re.sub(r"[^\d,.\-]", "", valeur_str)
+    # Si la valeur contient une virgule et pas de point → on suppose que la virgule est un séparateur décimal
+    if "," in valeur_str and "." not in valeur_str:
+        valeur_str = valeur_str.replace(",", ".")
+    # Supprimer les éventuelles autres virgules ou points parasites
+    valeur_str = valeur_str.replace(" ", "").strip()
+    try:
+        return float(valeur_str)
+    except ValueError:
+        return None
 
 def sauvegarder_parametres_gsheet():
 
@@ -44,7 +61,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v1")
+st.markdown("Version: v2")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -80,14 +97,11 @@ def charger_nomenclature_gsheet():
         df["Coût moule (€)"] = None
 
     # Conversion propre des colonnes numériques avec virgules en points
-    colonnes_numeriques = [
-        "Masse (kg)", "Prix matière (€/kg)", 
-        "Coût moule (€)", "Prix Effectif / Véhicule"
-    ]
+    colonnes_numeriques = ["Masse (kg)", "Prix matière (€/kg)", "Coût moule (€)", "Prix Effectif / Véhicule"]
     for col in colonnes_numeriques:
         if col in df.columns:
-            df[col] = df[col].apply(lambda x: str(x).replace("€", "").replace(",", ".").replace(" ", "").strip())
-            df[col] = pd.to_numeric(df[col], errors="coerce")
+            df[col] = df[col].apply(nettoyer_valeur_numerique)
+
     return df
 
 @st.cache_data(ttl=10)
