@@ -61,7 +61,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v2")
+st.markdown("Version: v3")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -76,6 +76,9 @@ def charger_nomenclature_gsheet():
     worksheet = sheet.worksheet(st.secrets["sheets"]["worksheet_nomenclature"])
     data = worksheet.get_all_records()
     df = pd.DataFrame(data)
+    st.subheader("Debug données Google Sheets")
+    st.write(df.head(10))
+
 
     # Nettoyage et normalisation
     df = df.dropna(subset=["Composant"], how='all')
