@@ -85,9 +85,8 @@ def charger_nomenclature_gsheet():
     ]
     for col in colonnes_numeriques:
         if col in df.columns:
-            df[col] = df[col].astype(str).str.replace(",", ".", regex=False).str.replace(" ", "").str.strip()
+            df[col] = df[col].apply(lambda x: str(x).replace("€", "").replace(",", ".").replace(" ", "").strip())
             df[col] = pd.to_numeric(df[col], errors="coerce")
-
     return df
 
 @st.cache_data(ttl=10)
