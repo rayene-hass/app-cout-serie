@@ -46,7 +46,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v11")
+st.markdown("Version: v11b")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
