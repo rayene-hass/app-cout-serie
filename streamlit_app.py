@@ -80,7 +80,7 @@ def charger_nomenclature_gsheet():
     if "Coût moule (€)" not in df.columns:
         df["Coût moule (€)"] = None
 
-     colonnes_numeriques = ["Masse (kg)", "Prix matière (€/kg)","Coût moule (€)", "Prix Effectif / Véhicule", "Quantité / Véhicule"]
+    colonnes_numeriques = ["Masse (kg)", "Prix matière (€/kg)","Coût moule (€)", "Prix Effectif / Véhicule", "Quantité / Véhicule"]
     for col in colonnes_numeriques:
         if col in df.columns:
             df[col] = (
