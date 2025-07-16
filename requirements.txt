@@ -1,4 +1,8 @@
-streamlit
-pandas
-openpyxl
-xlsxwriter
+streamlit as st
+pandas as pd
+math
+io
+json
+gspread
+google-auth
+json
