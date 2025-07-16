@@ -23,15 +23,25 @@ def sauvegarder_parametres_gsheet():
     for _, row in df.iterrows():
         comp_key = f"{row.get('Ensemble','')}/{row.get('Sous-Ensemble','')}/{row.get('Composant','')}/{row.get('Fournisseur','')}".strip().lower()
         params = comp_params.get(comp_key, {})
-        if "interp_points" not in params or not isinstance(params["interp_points"], list):
-            params["interp_points"] = []
+        cleaned_points = []
+        for pair in params.get("interp_points", []):
+            try:
+                if (
+                    isinstance(pair, (list, tuple))
+                    and len(pair) == 2
+                    and not pd.isna(pair[0]) and not pd.isna(pair[1])
+                    and math.isfinite(float(pair[0])) and math.isfinite(float(pair[1]))
+                ):
+                    cleaned_points.append([float(pair[0]), float(pair[1])])
+            except Exception:
+                continue
         sauvegarde.append({
             "comp_key": comp_key,
             "law": row.get("Loi spécifique", "Global"),
             "prix_matiere": row.get("Prix matière (€/kg)", None),
             "cout_moule": row.get("Coût moule (€)", None),
             "masse": row.get("Masse (kg)", None),            
-            "interp_points": json.dumps([[float(pair[0]), float(pair[1])] for pair in params["interp_points"] if (isinstance(pair, (list, tuple)) and len(pair) == 2 and not (pd.isna(pair[0]) or pd.isna(pair[1])))])
+            "interp_points": json.dumps(cleaned_points)
             })
 
     # Ecrasement de toutes les anciennes données du worksheet
@@ -46,7 +56,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v14")
+st.markdown("Version: v15")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -202,6 +212,19 @@ if submit:
             "cout_moule": row.get("Coût moule (€)", None),
             "masse": row.get("Masse (kg)", None)
         }
+
+        if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
+            if "interp_points" not in st.session_state.comp_params[comp_key]:
+                try:
+                    prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
+                    quantite = float(row.get("Quantité / Véhicule", 1.0))
+                    prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
+                except:
+                    prix_base = 1.0
+                st.session_state.comp_params[comp_key]["interp_points"] = [
+                    [1, round(prix_base, 2)],
+                    [1000, round(prix_base * 0.5, 2)]
+                ]
 
     try:
         sauvegarder_parametres_gsheet()
