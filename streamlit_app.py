@@ -44,7 +44,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v8")
+st.markdown("Version: v9")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -57,12 +57,10 @@ def charger_nomenclature_gsheet():
     client = gspread.authorize(creds)
     sheet = client.open_by_key(st.secrets["sheets"]["spreadsheet_id"])
     worksheet = sheet.worksheet(st.secrets["sheets"]["worksheet_nomenclature"])
-    data = worksheet.get_all_records()
-    st.subheader("⚠️ Aperçu brut Google Sheets (ligne 1)")
-    st.write(data[0])
-
-    df = pd.DataFrame(data)
-
+    raw_data = worksheet.get_values()
+    headers = raw_data[0]
+    rows = raw_data[1:]
+    df = pd.DataFrame(rows, columns=headers)
 
     # Nettoyage et normalisation
     df = df.dropna(subset=["Composant"], how='all')
@@ -83,18 +81,22 @@ def charger_nomenclature_gsheet():
     if "Coût moule (€)" not in df.columns:
         df["Coût moule (€)"] = None
 
-    colonnes_numeriques = ["Masse (kg)", "Prix matière (€/kg)", "Coût moule (€)", "Prix Effectif / Véhicule", "Quantité / Véhicule"]
+    colonnes_numeriques = [
+        "Masse unitaire", "Masse (kg)", "Prix matière (€/kg)",
+        "Coût moule (€)", "Prix Effectif / Véhicule", "Quantité / Véhicule"
+    ]
+    
     for col in colonnes_numeriques:
         if col in df.columns:
             df[col] = (
                 df[col]
                 .astype(str)
-                .str.replace("\u202f", "", regex=False)  # ← AJOUTÉ
+                .str.replace("\u202f", "", regex=False)  # espace insécable
                 .str.replace(",", ".", regex=False)
                 .str.replace(" ", "", regex=False)
+                .str.strip()
             )
             df[col] = pd.to_numeric(df[col], errors="coerce")
-
     
     return df
 
