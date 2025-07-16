@@ -23,13 +23,15 @@ def sauvegarder_parametres_gsheet():
     for _, row in df.iterrows():
         comp_key = f"{row.get('Ensemble','')}/{row.get('Sous-Ensemble','')}/{row.get('Composant','')}/{row.get('Fournisseur','')}".strip().lower()
         params = comp_params.get(comp_key, {})
+        if "interp_points" not in params:
+            params["interp_points"] = []
         sauvegarde.append({
             "comp_key": comp_key,
             "law": row.get("Loi spécifique", "Global"),
             "prix_matiere": row.get("Prix matière (€/kg)", None),
             "cout_moule": row.get("Coût moule (€)", None),
-            "masse": row.get("Masse (kg)", None),
-            "interp_points": json.dumps([[float(q), float(p)] for pair in params.get("interp_points", []) if isinstance(pair, (list, tuple)) and len(pair) == 2 for q, p in [pair]])
+            "masse": row.get("Masse (kg)", None),            
+            "interp_points": json.dumps([[float(q), float(p)] for pair in params["interp_points"] if isinstance(pair, (list, tuple)) and len(pair) == 2 for q, p in [pair]])
             })
 
     # Ecrasement de toutes les anciennes données du worksheet
@@ -44,7 +46,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v10")
+st.markdown("Version: v11")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
