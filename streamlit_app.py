@@ -36,7 +36,7 @@ def sauvegarder_parametres_gsheet():
 
     # Ecrasement de toutes les anciennes données du worksheet
     worksheet.clear()
-    worksheet.update([sauvegarde[0].keys()] + [list(d.values()) for d in sauvegarde])
+    worksheet.update([list(sauvegarde[0].keys())] + [list(d.values()) for d in sauvegarde])
 
 
 def get_comp_key(row):
@@ -46,7 +46,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v11b")
+st.markdown("Version: v12")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
