@@ -78,6 +78,16 @@ def charger_nomenclature_gsheet():
     if "Coût moule (€)" not in df.columns:
         df["Coût moule (€)"] = None
 
+    # Conversion propre des colonnes numériques avec virgules en points
+    colonnes_numeriques = [
+        "Masse (kg)", "Prix matière (€/kg)", 
+        "Coût moule (€)", "Prix Effectif / Véhicule"
+    ]
+    for col in colonnes_numeriques:
+        if col in df.columns:
+            df[col] = df[col].astype(str).str.replace(",", ".", regex=False).str.replace(" ", "").str.strip()
+            df[col] = pd.to_numeric(df[col], errors="coerce")
+
     return df
 
 @st.cache_data(ttl=10)
