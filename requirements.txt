@@ -1,8 +1,4 @@
-streamlit as st
-pandas as pd
-math
-io
-json
+streamlit
+pandas
 gspread
 google-auth
-json
