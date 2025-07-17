@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v36")
+st.markdown("Version: v30")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -206,7 +206,6 @@ for col in numerical_columns:
 with st.form(key="edit_form"):
     edited_df = st.data_editor(
         df_display,
-        key="editor_nomenclature",
         num_rows="dynamic",
         use_container_width=True,
         hide_index=True,
@@ -302,27 +301,18 @@ if global_law == "Interpolation":
         def interp_dialog():
             st.write("**Définissez des points (quantité produite vs facteur de coût unitaire par rapport au coût de base)** :")
             # Table des points d'interpolation éditable
-            editor_key_global = "interp_editor_global"
-            st.data_editor(
+            interp_df = st.data_editor(
                 st.session_state.interp_points,
-                key=editor_key_global,
-                num_rows="dynamic",
-                use_container_width=True,
-                hide_index=True,
+                num_rows="dynamic", use_container_width=True, hide_index=True,
                 column_config={
                     "Quantité": st.column_config.NumberColumn("Quantité", min_value=1, step=1),
                     "Facteur coût unitaire": st.column_config.NumberColumn("Facteur coût unitaire", min_value=0.0, max_value=1.0, step=0.01)
                 }
             )
-            
-            interp_raw = st.session_state.get(editor_key_global, st.session_state.interp_points)
-            interp_df = (
-                interp_raw.copy()
-                if isinstance(interp_raw, pd.DataFrame)
-                else pd.DataFrame(interp_raw, columns=["Quantité", "Facteur coût unitaire"])
-            )
-            
+            # Conseils d'utilisation
+            st.markdown("*(Exemple : 1 → 1.0 signifie un coût de base à 1 unité; 1000 → 0.5 signifie un coût unitaire réduit à 50% du prix de base à 1000 unités.)*")
             if st.button("Enregistrer", key="save_interp_points"):
+                # Trier par quantité et sauvegarder
                 interp_df = interp_df.sort_values("Quantité")
                 st.session_state.interp_points = interp_df
                 try:
@@ -331,8 +321,6 @@ if global_law == "Interpolation":
                 except Exception as e:
                     st.error(f"Erreur lors de la sauvegarde : {e}")
                 st.rerun()
-
-
         interp_dialog()
     # Affichage des points actuels en résumé
     if not st.session_state.interp_points.empty:
@@ -541,10 +529,8 @@ if not edited_df.empty:
 
 
                     df_interp = pd.DataFrame(interp, columns=["Quantité", "Prix unitaire (€)"])
-                    editor_key = f"interp_editor_{comp_key}"  # clé unique par composant
-                    st.data_editor(
+                    df_interp_edited = st.data_editor(
                         df_interp,
-                        key=editor_key,
                         num_rows="dynamic",
                         use_container_width=True,
                         hide_index=True,
@@ -553,29 +539,20 @@ if not edited_df.empty:
                             "Prix unitaire (€)": st.column_config.NumberColumn("Prix unitaire (€)", min_value=0.0, step=0.01),
                         }
                     )
-                    df_interp_edited_raw = st.session_state.get(editor_key, df_interp)
-                    df_interp_edited = (
-                        df_interp_edited_raw.copy()
-                        if isinstance(df_interp_edited_raw, pd.DataFrame)
-                        else pd.DataFrame(df_interp_edited_raw, columns=["Quantité", "Prix unitaire (€)"])
-                    )
+                    if st.button("Valider", key="val_interp_points_global_popup"):
+                        st.session_state.comp_params[comp_key]["interp_points"] = df_interp_edited.dropna().sort_values("Quantité").values.tolist()
 
-                    
-                    if st.button("Valider", key=f"val_interp_points_{comp_key}"):
-                        st.session_state.comp_params[comp_key]["interp_points"] = (
-                            df_interp_edited.dropna().sort_values("Quantité").values.tolist()
-                        )
-                    
+                        # On sauvegarde les paramètres
                         try:
                             sauvegarder_parametres_gsheet()
                             st.success("Paramètres sauvegardés dans Google Sheets !")
                         except Exception as e:
                             st.error(f"Erreur lors de la sauvegarde : {e}")
-                    
+
+                        # On ferme la popup et on relance
                         st.session_state.popup_open_for = None
                         st.session_state.popup_comp_name = None
                         st.rerun()
-
             param_dialog()
 
         show_param_dialog()
