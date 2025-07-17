@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v35 grosse modif")
+st.markdown("Version: v36")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -314,7 +314,13 @@ if global_law == "Interpolation":
                     "Facteur coût unitaire": st.column_config.NumberColumn("Facteur coût unitaire", min_value=0.0, max_value=1.0, step=0.01)
                 }
             )
-            interp_df = st.session_state.get(editor_key_global, st.session_state.interp_points)
+            
+            interp_raw = st.session_state.get(editor_key_global, st.session_state.interp_points)
+            interp_df = (
+                interp_raw.copy()
+                if isinstance(interp_raw, pd.DataFrame)
+                else pd.DataFrame(interp_raw, columns=["Quantité", "Facteur coût unitaire"])
+            )
             
             if st.button("Enregistrer", key="save_interp_points"):
                 interp_df = interp_df.sort_values("Quantité")
@@ -325,6 +331,7 @@ if global_law == "Interpolation":
                 except Exception as e:
                     st.error(f"Erreur lors de la sauvegarde : {e}")
                 st.rerun()
+
 
         interp_dialog()
     # Affichage des points actuels en résumé
@@ -546,7 +553,13 @@ if not edited_df.empty:
                             "Prix unitaire (€)": st.column_config.NumberColumn("Prix unitaire (€)", min_value=0.0, step=0.01),
                         }
                     )
-                    df_interp_edited = st.session_state.get(editor_key, df_interp)
+                    df_interp_edited_raw = st.session_state.get(editor_key, df_interp)
+                    df_interp_edited = (
+                        df_interp_edited_raw.copy()
+                        if isinstance(df_interp_edited_raw, pd.DataFrame)
+                        else pd.DataFrame(df_interp_edited_raw, columns=["Quantité", "Prix unitaire (€)"])
+                    )
+
                     
                     if st.button("Valider", key=f"val_interp_points_{comp_key}"):
                         st.session_state.comp_params[comp_key]["interp_points"] = (
