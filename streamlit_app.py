@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v30")
+st.markdown("Version: v31")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -194,15 +194,14 @@ st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
 # Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
-# Créer une copie pour affichage uniquement
 df_display = df.copy()
 
-# Normalisation des types et remplacement des NaN par "" pour éviter blocage d'édition
 numerical_columns = ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]
 for col in numerical_columns:
     if col in df_display.columns:
-        df_display[col] = pd.to_numeric(df_display[col], errors='coerce').astype(float)
-        df_display[col] = df_display[col].apply(lambda x: "" if pd.isna(x) else x)
+        df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
+        df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
+
 
 with st.form(key="edit_form"):
     edited_df = st.data_editor(
