@@ -88,7 +88,7 @@ st.markdown("Version: vjesuisperdu")
 
 st.markdown("## 1. Chargement de la nomenclature")
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=1000)
 def charger_nomenclature_gsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
@@ -138,7 +138,7 @@ def charger_nomenclature_gsheet():
 
     return df
 
-@st.cache_data(ttl=10)
+@st.cache_data(ttl=1000)
 def charger_reglages_gsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
