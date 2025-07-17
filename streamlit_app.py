@@ -230,8 +230,8 @@ with st.form(key="edit_form"):
     )
     submit = st.form_submit_button("Valider les modifications")
 if submit:
+    st.write("Valeur capturée dans `edited_df` juste après submit :", edited_df)
     st.session_state.df_nomenclature = edited_df
-    edited_df = edited_df.copy()
 
     # Synchronisation de comp_params avec normalisation des clés
     st.session_state.comp_params = {}
