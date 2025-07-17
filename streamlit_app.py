@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v30")
+st.markdown("Version: v40")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -265,8 +265,6 @@ if submit:
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
 
-else:
-    edited_df = st.session_state.df_nomenclature
 
 
 # 3. Choix du scénario de production
