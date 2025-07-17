@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v26")
+st.markdown("Version: v27")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -193,8 +193,13 @@ st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les
 # Note explicative pour les composants moulés
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
-# Appliquer les réglages (lois spécifiques, moules...) sur le DataFrame
-df = appliquer_reglages_sur_df(df.copy(), st.session_state.comp_params)
+# Appliquer les réglages uniquement si aucune session en cours (ex: au 1er chargement)
+if "df_nomenclature" not in st.session_state or st.session_state.get("json_loaded", False):
+    df = appliquer_reglages_sur_df(df.copy(), st.session_state.comp_params)
+    st.session_state.df_nomenclature = df.copy()
+    st.session_state.json_loaded = False  # On désactive le flag une fois utilisé
+else:
+    df = st.session_state.df_nomenclature.copy()
 
 
 # Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
@@ -330,7 +335,6 @@ if global_law == "Interpolation":
     st.write("*(Le coût unitaire pour une quantité N sera interpolé linéairement entre les points fournis, et restera constant en dehors de la plage définie.)*")
 
 # 4. Calcul des coûts (production = N véhicules) si le tableau n'est pas vide
-st.session_state.df_nomenclature = appliquer_reglages_sur_df(st.session_state.df_nomenclature.copy(), st.session_state.comp_params)
 if not edited_df.empty:
     df_calc = st.session_state.df_nomenclature.copy()
     # Conversion des colonnes Quantité et Prix en numériques (NaN -> 0)
