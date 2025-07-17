@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v104")
+st.markdown("Version: v105")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -190,29 +190,27 @@ st.markdown("## 2. Consultation et modification de la nomenclature")
 st.write("Vous pouvez éditer le tableau ci-dessous : ajouter/modifier/supprimer des composants si besoin.")
 st.write("- **Loi spécifique** : vous pouvez définir une loi d’interpolation personnalisée (quantité → prix unitaire) pour certains composants si vous disposez de devis ou d’historiques.")
 st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les composants **moulés** (fournis par *Formes & Volumes* ou *Stratiforme Industries*), renseignez ces valeurs pour un calcul de coût unitaire basé sur la matière et l'amortissement du moule.")
-# Note explicative pour les composants moulés
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
-# Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
+# Préparation des données initiales
 df_display = df.copy()
-
 numerical_columns = ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]
 for col in numerical_columns:
     if col in df_display.columns:
         df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
         df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
-
+# Initialisation des données si pas encore en session_state
 if "editor_data" not in st.session_state:
     st.session_state.editor_data = df_display.copy()
 
-# Utiliser data_editor HORS du formulaire avec une clé de session
-st.session_state.editor_data = st.data_editor(
+# Affichage du tableau éditable HORS formulaire, sans écraser session_state à chaque modification
+edited_df = st.data_editor(
     st.session_state.editor_data,
     num_rows="dynamic",
     use_container_width=True,
     hide_index=True,
-    key="main_data_editor",  # Clé fixe pour maintenir l'état
+    key="main_data_editor",
     column_config={
         "Loi spécifique": st.column_config.SelectboxColumn(
             "Loi spécifique",
@@ -233,15 +231,12 @@ st.session_state.editor_data = st.data_editor(
     }
 )
 
-# Bouton de validation HORS du formulaire
+# Bouton pour valider les modifications
 if st.button("Valider les modifications", type="primary", key="validate_changes"):
-    # Utiliser directement les données du session_state qui sont toujours à jour
-    edited_df = st.session_state.editor_data.copy()
-    
-    # Mise à jour du DataFrame principal
-    st.session_state.df_nomenclature = edited_df
+    st.session_state.editor_data = edited_df.copy()
+    st.session_state.df_nomenclature = edited_df.copy()
 
-    # Synchronisation de comp_params avec normalisation des clés
+    # Synchronisation de comp_params
     st.session_state.comp_params = {}
     for _, row in edited_df.iterrows():
         if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
@@ -255,6 +250,7 @@ if st.button("Valider les modifications", type="primary", key="validate_changes"
             "masse": row.get("Masse (kg)", None)
         }
 
+        # Initialisation de l'interpolation si besoin
         if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
             if "interp_points" not in st.session_state.comp_params[comp_key]:
                 try:
@@ -274,8 +270,9 @@ if st.button("Valider les modifications", type="primary", key="validate_changes"
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
 
-# Mettre à jour edited_df pour la suite du code
+# Pour usage dans d'autres blocs
 edited_df = st.session_state.editor_data.copy()
+
 
 
 # 3. Choix du scénario de production
