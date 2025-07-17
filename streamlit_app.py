@@ -193,6 +193,13 @@ st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les
 # Note explicative pour les composants moulés
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
+# Forcer le blur de tous les inputs pour valider les cellules modifiées avant soumission
+st.components.v1.html("""
+<script>
+document.querySelectorAll('input').forEach(el => el.blur());
+</script>
+""", height=0)
+
 # Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
 df_display = df.copy()
 
