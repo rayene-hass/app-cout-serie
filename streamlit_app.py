@@ -82,13 +82,12 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: vjesuisperdu")
+st.markdown("Version: v100")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
 st.markdown("## 1. Chargement de la nomenclature")
 
-@st.cache_data(ttl=1000)
 def charger_nomenclature_gsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
@@ -138,7 +137,6 @@ def charger_nomenclature_gsheet():
 
     return df
 
-@st.cache_data(ttl=1000)
 def charger_reglages_gsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
     creds = Credentials.from_service_account_info(st.secrets["gcp_service_account"], scopes=scope)
