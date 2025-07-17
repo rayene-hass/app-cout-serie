@@ -193,7 +193,6 @@ st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les
 # Note explicative pour les composants moulés
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
-# Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
 df_display = df.copy()
 
 numerical_columns = ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]
@@ -202,41 +201,39 @@ for col in numerical_columns:
         df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
         df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
+# Tableau interactif avec clé persistante (nécessaire)
+edited_df = st.data_editor(
+    df_display,
+    key="table_editor",
+    num_rows="dynamic",
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Loi spécifique": st.column_config.SelectboxColumn(
+            "Loi spécifique", options=["Global", "Interpolation"]
+        ),
+        "Prix matière (€/kg)": st.column_config.NumberColumn(
+            "Prix matière (€/kg)", help="Prix de la matière première en € par kg"
+        ),
+        "Coût moule (€)": st.column_config.NumberColumn(
+            "Coût moule (€)", help="Coût du moule (€)"
+        ),
+        "Masse (kg)": st.column_config.NumberColumn(
+            "Masse (kg)", help="Masse unitaire du composant"
+        )
+    }
+)
 
-with st.form(key="edit_form"):
-    edited_df = st.data_editor(
-        df_display,
-        num_rows="dynamic",
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Loi spécifique": st.column_config.SelectboxColumn(
-                "Loi spécifique",
-                options=["Global", "Interpolation"]
-            ),
-            "Prix matière (€/kg)": st.column_config.NumberColumn(
-                "Prix matière (€/kg)",
-                help="Prix de la matière première en € par kg"
-            ),
-            "Coût moule (€)": st.column_config.NumberColumn(
-                "Coût moule (€)",
-                help="Coût du moule (€) pour ce composant (investissement outillage)"
-            ),
-            "Masse (kg)": st.column_config.NumberColumn(
-                "Masse (kg)",
-                help="Masse unitaire du composant en kg"
-            )
-        }
-    )
-    submit = st.form_submit_button("Valider les modifications")
-if submit:
-    st.session_state.df_nomenclature = edited_df
+# Stockage à chaque frame (donc toujours synchronisé avec UI)
+st.session_state.df_nomenclature = edited_df
 
-    # Synchronisation de comp_params avec normalisation des clés
+# Ce bouton est en dehors du tableau, donc toute modification est bien validée avant
+if st.button("Valider les modifications", key="valider_modifs"):
     st.session_state.comp_params = {}
+
     for _, row in edited_df.iterrows():
         if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
-            continue  # Ignorer lignes vides
+            continue
 
         comp_key = get_comp_key(row)
         st.session_state.comp_params[comp_key] = {
@@ -261,9 +258,10 @@ if submit:
 
     try:
         sauvegarder_parametres_gsheet()
-        st.success("Modifications sauvegardées dans Google Sheets !")
+        st.success("Modifications bien sauvegardées dans Google Sheets !")
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
+
 
 
 # 3. Choix du scénario de production
