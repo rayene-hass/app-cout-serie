@@ -184,53 +184,42 @@ try:
 except Exception as e:
     st.warning(f"Erreur lors du chargement des paramètres Google Sheets : {e}")
 
-
 # 2. Consultation et modification de la nomenclature
 st.markdown("## 2. Consultation et modification de la nomenclature")
-st.write("Vous pouvez éditer le tableau ci-dessous : ajouter/modifier/supprimer des composants si besoin.")
-st.write("- **Loi spécifique** : vous pouvez définir une loi d’interpolation personnalisée (quantité → prix unitaire) pour certains composants si vous disposez de devis ou d’historiques.")
-st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les composants **moulés** (fournis par *Formes & Volumes* ou *Stratiforme Industries*), renseignez ces valeurs pour un calcul de coût unitaire basé sur la matière et l'amortissement du moule.")
-st.info("💡 Pour que la dernière cellule modifiée soit bien prise en compte, pensez à appuyer sur Entrée ou à cliquer ailleurs avant de valider.")
 
-# Préparation du dataframe à afficher
 df_display = df.copy()
+
 numerical_columns = ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]
 for col in numerical_columns:
     if col in df_display.columns:
         df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
         df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
-# Affichage du tableau dans le formulaire (on récupère edited_df ici AVANT rerun)
-with st.form("edit_form"):
-    edited_df = st.data_editor(
-        df_display,
-        num_rows="dynamic",
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Loi spécifique": st.column_config.SelectboxColumn(
-                "Loi spécifique", options=["Global", "Interpolation"]
-            ),
-            "Prix matière (€/kg)": st.column_config.NumberColumn(
-                "Prix matière (€/kg)", help="Prix de la matière première en € par kg"
-            ),
-            "Coût moule (€)": st.column_config.NumberColumn(
-                "Coût moule (€)", help="Coût du moule (€) pour ce composant (investissement outillage)"
-            ),
-            "Masse (kg)": st.column_config.NumberColumn(
-                "Masse (kg)", help="Masse unitaire du composant en kg"
-            ),
-        }
-    )
-    st.form_submit_button("Préparer la validation", disabled=True)  # fictif pour forcer le `form` à exister
+# ✅ le tableau s'affiche à chaque frame, sans form
+edited_df = st.data_editor(
+    df_display,
+    num_rows="dynamic",
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Loi spécifique": st.column_config.SelectboxColumn(
+            "Loi spécifique", options=["Global", "Interpolation"]
+        ),
+        "Prix matière (€/kg)": st.column_config.NumberColumn(
+            "Prix matière (€/kg)", help="Prix de la matière première en € par kg"
+        ),
+        "Coût moule (€)": st.column_config.NumberColumn(
+            "Coût moule (€)", help="Coût du moule (€) pour ce composant"
+        ),
+        "Masse (kg)": st.column_config.NumberColumn(
+            "Masse (kg)", help="Masse unitaire du composant en kg"
+        )
+    }
+)
 
-# Bouton de validation en-dehors du form
-submit = st.button("Valider les modifications")
-
-if submit:
+if st.button("Valider les modifications"):
     st.session_state.df_nomenclature = edited_df
 
-    # Synchronisation des paramètres dans st.session_state.comp_params
     st.session_state.comp_params = {}
     for _, row in edited_df.iterrows():
         if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
@@ -257,12 +246,12 @@ if submit:
                     [1000, round(prix_base * 0.5, 2)]
                 ]
 
-    # Sauvegarde dans Google Sheets
     try:
         sauvegarder_parametres_gsheet()
         st.success("Modifications sauvegardées dans Google Sheets !")
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
+
 
 
 
