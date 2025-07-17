@@ -190,38 +190,22 @@ st.markdown("## 2. Consultation et modification de la nomenclature")
 st.write("Vous pouvez éditer le tableau ci-dessous : ajouter/modifier/supprimer des composants si besoin.")
 st.write("- **Loi spécifique** : vous pouvez définir une loi d’interpolation personnalisée (quantité → prix unitaire) pour certains composants si vous disposez de devis ou d’historiques.")
 st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les composants **moulés** (fournis par *Formes & Volumes* ou *Stratiforme Industries*), renseignez ces valeurs pour un calcul de coût unitaire basé sur la matière et l'amortissement du moule.")
+# Note explicative pour les composants moulés
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
-# Forçage JS pour éviter la perte de synchronisation DOM → Python
-st.markdown("""
-<button id="force_sync" style="display:none;"></button>
-<script>
-let lastClicked = null;
-document.addEventListener("click", function(e) {
-  const el = e.target;
-  if (el.tagName === "INPUT" || el.tagName === "SELECT" || el.isContentEditable) {
-    lastClicked = el;
-  }
-});
-window.addEventListener("beforeunload", function () {
-  document.getElementById("force_sync").click();
-});
-</script>
-""", unsafe_allow_html=True)
-
-# Préparation du DataFrame
+# Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
 df_display = df.copy()
+
 numerical_columns = ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]
 for col in numerical_columns:
     if col in df_display.columns:
         df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
         df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
-# Formulaire avec data_editor
+
 with st.form(key="edit_form"):
     edited_df = st.data_editor(
         df_display,
-        key="editable_table",
         num_rows="dynamic",
         use_container_width=True,
         hide_index=True,
@@ -244,24 +228,15 @@ with st.form(key="edit_form"):
             )
         }
     )
-
     submit = st.form_submit_button("Valider les modifications")
-
 if submit:
-    # ⏱On laisse à Streamlit le temps de finaliser le DOM vers Python
-    import time
-    time.sleep(0.1)
-
-    # Vérification pour debug
-    st.write("Données récupérées après clic :", edited_df)
-
     st.session_state.df_nomenclature = edited_df
 
-    # Synchronisation de comp_params
+    # Synchronisation de comp_params avec normalisation des clés
     st.session_state.comp_params = {}
     for _, row in edited_df.iterrows():
         if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
-            continue
+            continue  # Ignorer lignes vides
 
         comp_key = get_comp_key(row)
         st.session_state.comp_params[comp_key] = {
