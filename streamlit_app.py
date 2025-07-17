@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v24")
+st.markdown("Version: v25")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -192,6 +192,15 @@ st.write("- **Loi spécifique** : vous pouvez définir une loi d’interpolation
 st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les composants **moulés** (fournis par *Formes & Volumes* ou *Stratiforme Industries*), renseignez ces valeurs pour un calcul de coût unitaire basé sur la matière et l'amortissement du moule.")
 # Note explicative pour les composants moulés
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
+
+# Appliquer les réglages (lois spécifiques, moules...) sur le DataFrame
+df = appliquer_reglages_sur_df(df.copy(), st.session_state.comp_params)
+
+# Nettoyage des colonnes numériques pour éviter les bugs d'édition dans st.data_editor
+for col in ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]:
+    if col in df.columns:
+        df[col] = pd.to_numeric(df[col], errors="coerce").fillna("")
+
 
 # Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
 with st.form(key="edit_form"):
