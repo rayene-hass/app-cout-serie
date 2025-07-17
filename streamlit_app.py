@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v25")
+st.markdown("Version: v26")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -196,11 +196,6 @@ st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **
 # Appliquer les réglages (lois spécifiques, moules...) sur le DataFrame
 df = appliquer_reglages_sur_df(df.copy(), st.session_state.comp_params)
 
-# Nettoyage des colonnes numériques pour éviter les bugs d'édition dans st.data_editor
-for col in ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]:
-    if col in df.columns:
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna("")
-
 
 # Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
 with st.form(key="edit_form"):
@@ -216,11 +211,21 @@ with st.form(key="edit_form"):
             ),
             "Prix matière (€/kg)": st.column_config.NumberColumn(
                 "Prix matière (€/kg)",
-                help="Prix de la matière première en € par kg"
+                help="Prix de la matière première en € par kg",
+                format="%.2f",
+                step=0.01
             ),
             "Coût moule (€)": st.column_config.NumberColumn(
                 "Coût moule (€)",
-                help="Coût du moule (€) pour ce composant (investissement outillage)"
+                help="Coût du moule (€) pour ce composant (investissement outillage)",
+                format="%.2f",
+                step=1.0
+            ),
+            "Masse (kg)": st.column_config.NumberColumn(
+                "Masse (kg)",
+                help="Masse unitaire de ce composant (en kg)",
+                format="%.3f",
+                step=0.01
             )
         }
     )
