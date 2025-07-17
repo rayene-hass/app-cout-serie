@@ -202,6 +202,9 @@ for col in numerical_columns:
         df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
         df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
+force_sync = st.session_state.get("force_sync", 0)
+st.session_state.force_sync = force_sync + 1
+df_display["__sync__"] = f"sync{st.session_state.force_sync}"
 
 with st.form(key="edit_form"):
     edited_df = st.data_editor(
@@ -210,6 +213,7 @@ with st.form(key="edit_form"):
         use_container_width=True,
         hide_index=True,
         column_config={
+            "__sync__": st.column_config.TextColumn(label="", disabled=True),  # masqué
             "Loi spécifique": st.column_config.SelectboxColumn(
                 "Loi spécifique",
                 options=["Global", "Interpolation"]
@@ -228,8 +232,10 @@ with st.form(key="edit_form"):
             )
         }
     )
+
     submit = st.form_submit_button("Valider les modifications")
 if submit:
+    edited_df = edited_df.drop(columns=["__sync__"], errors="ignore")
     st.session_state.df_nomenclature = edited_df
 
     # Synchronisation de comp_params avec normalisation des clés
