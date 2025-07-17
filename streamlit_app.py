@@ -184,38 +184,59 @@ try:
 except Exception as e:
     st.warning(f"Erreur lors du chargement des paramètres Google Sheets : {e}")
 
+
 # 2. Consultation et modification de la nomenclature
 st.markdown("## 2. Consultation et modification de la nomenclature")
 st.write("Vous pouvez éditer le tableau ci-dessous : ajouter/modifier/supprimer des composants si besoin.")
+st.write("- **Loi spécifique** : vous pouvez définir une loi d’interpolation personnalisée (quantité → prix unitaire) pour certains composants si vous disposez de devis ou d’historiques.")
+st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les composants **moulés** (fournis par *Formes & Volumes* ou *Stratiforme Industries*), renseignez ces valeurs pour un calcul de coût unitaire basé sur la matière et l'amortissement du moule.")
+# Note explicative pour les composants moulés
+st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
-# Copie et nettoyage du DataFrame
+# Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
 df_display = df.copy()
+
 numerical_columns = ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]
 for col in numerical_columns:
-    df_display[col] = pd.to_numeric(df_display[col], errors="coerce").apply(lambda x: None if pd.isna(x) else float(x))
+    if col in df_display.columns:
+        df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
+        df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
-# Affichage du tableau ÉDITABLE
-edited_df = st.data_editor(
-    df_display,
-    num_rows="dynamic",
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "Loi spécifique": st.column_config.SelectboxColumn("Loi spécifique", options=["Global", "Interpolation"]),
-        "Prix matière (€/kg)": st.column_config.NumberColumn("Prix matière (€/kg)"),
-        "Coût moule (€)": st.column_config.NumberColumn("Coût moule (€)"),
-        "Masse (kg)": st.column_config.NumberColumn("Masse (kg)")
-    }
-)
 
-# Bouton de validation en dehors de tout formulaire
-if st.button("Valider les modifications"):
-    st.session_state.df_nomenclature = edited_df.copy()
+with st.form(key="edit_form"):
+    edited_df = st.data_editor(
+        df_display,
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Loi spécifique": st.column_config.SelectboxColumn(
+                "Loi spécifique",
+                options=["Global", "Interpolation"]
+            ),
+            "Prix matière (€/kg)": st.column_config.NumberColumn(
+                "Prix matière (€/kg)",
+                help="Prix de la matière première en € par kg"
+            ),
+            "Coût moule (€)": st.column_config.NumberColumn(
+                "Coût moule (€)",
+                help="Coût du moule (€) pour ce composant (investissement outillage)"
+            ),
+            "Masse (kg)": st.column_config.NumberColumn(
+                "Masse (kg)",
+                help="Masse unitaire du composant en kg"
+            )
+        }
+    )
+    submit = st.form_submit_button("Valider les modifications")
+if submit:
+    st.session_state.df_nomenclature = edited_df
 
+    # Synchronisation de comp_params avec normalisation des clés
     st.session_state.comp_params = {}
     for _, row in edited_df.iterrows():
         if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
-            continue
+            continue  # Ignorer lignes vides
 
         comp_key = get_comp_key(row)
         st.session_state.comp_params[comp_key] = {
