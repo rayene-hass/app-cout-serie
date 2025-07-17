@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v104")
+st.markdown("Version: v30")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -203,42 +203,33 @@ for col in numerical_columns:
         df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
 
-if "editor_data" not in st.session_state:
-    st.session_state.editor_data = df_display.copy()
-
-# Utiliser data_editor HORS du formulaire avec une clé de session
-st.session_state.editor_data = st.data_editor(
-    st.session_state.editor_data,
-    num_rows="dynamic",
-    use_container_width=True,
-    hide_index=True,
-    key="main_data_editor",  # Clé fixe pour maintenir l'état
-    column_config={
-        "Loi spécifique": st.column_config.SelectboxColumn(
-            "Loi spécifique",
-            options=["Global", "Interpolation"]
-        ),
-        "Prix matière (€/kg)": st.column_config.NumberColumn(
-            "Prix matière (€/kg)",
-            help="Prix de la matière première en € par kg"
-        ),
-        "Coût moule (€)": st.column_config.NumberColumn(
-            "Coût moule (€)",
-            help="Coût du moule (€) pour ce composant (investissement outillage)"
-        ),
-        "Masse (kg)": st.column_config.NumberColumn(
-            "Masse (kg)",
-            help="Masse unitaire du composant en kg"
-        )
-    }
-)
-
-# Bouton de validation HORS du formulaire
-if st.button("Valider les modifications", type="primary", key="validate_changes"):
-    # Utiliser directement les données du session_state qui sont toujours à jour
-    edited_df = st.session_state.editor_data.copy()
-    
-    # Mise à jour du DataFrame principal
+with st.form(key="edit_form"):
+    edited_df = st.data_editor(
+        df_display,
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Loi spécifique": st.column_config.SelectboxColumn(
+                "Loi spécifique",
+                options=["Global", "Interpolation"]
+            ),
+            "Prix matière (€/kg)": st.column_config.NumberColumn(
+                "Prix matière (€/kg)",
+                help="Prix de la matière première en € par kg"
+            ),
+            "Coût moule (€)": st.column_config.NumberColumn(
+                "Coût moule (€)",
+                help="Coût du moule (€) pour ce composant (investissement outillage)"
+            ),
+            "Masse (kg)": st.column_config.NumberColumn(
+                "Masse (kg)",
+                help="Masse unitaire du composant en kg"
+            )
+        }
+    )
+    submit = st.form_submit_button("Valider les modifications")
+if submit:
     st.session_state.df_nomenclature = edited_df
 
     # Synchronisation de comp_params avec normalisation des clés
@@ -274,8 +265,8 @@ if st.button("Valider les modifications", type="primary", key="validate_changes"
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
 
-# Mettre à jour edited_df pour la suite du code
-edited_df = st.session_state.editor_data.copy()
+else:
+    edited_df = st.session_state.df_nomenclature
 
 
 # 3. Choix du scénario de production
