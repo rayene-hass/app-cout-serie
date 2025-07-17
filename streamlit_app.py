@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v27")
+st.markdown("Version: v30")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -193,19 +193,20 @@ st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les
 # Note explicative pour les composants moulés
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
-# Appliquer les réglages uniquement si aucune session en cours (ex: au 1er chargement)
-if "df_nomenclature" not in st.session_state or st.session_state.get("json_loaded", False):
-    df = appliquer_reglages_sur_df(df.copy(), st.session_state.comp_params)
-    st.session_state.df_nomenclature = df.copy()
-    st.session_state.json_loaded = False  # On désactive le flag une fois utilisé
-else:
-    df = st.session_state.df_nomenclature.copy()
-
-
 # Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
+# Créer une copie pour affichage uniquement
+df_display = df.copy()
+
+# Normalisation des types et remplacement des NaN par "" pour éviter blocage d'édition
+numerical_columns = ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]
+for col in numerical_columns:
+    if col in df_display.columns:
+        df_display[col] = pd.to_numeric(df_display[col], errors='coerce').astype(float)
+        df_display[col] = df_display[col].apply(lambda x: "" if pd.isna(x) else x)
+
 with st.form(key="edit_form"):
     edited_df = st.data_editor(
-        df,
+        df_display,
         num_rows="dynamic",
         use_container_width=True,
         hide_index=True,
@@ -216,21 +217,15 @@ with st.form(key="edit_form"):
             ),
             "Prix matière (€/kg)": st.column_config.NumberColumn(
                 "Prix matière (€/kg)",
-                help="Prix de la matière première en € par kg",
-                format="%.2f",
-                step=0.01
+                help="Prix de la matière première en € par kg"
             ),
             "Coût moule (€)": st.column_config.NumberColumn(
                 "Coût moule (€)",
-                help="Coût du moule (€) pour ce composant (investissement outillage)",
-                format="%.2f",
-                step=1.0
+                help="Coût du moule (€) pour ce composant (investissement outillage)"
             ),
             "Masse (kg)": st.column_config.NumberColumn(
                 "Masse (kg)",
-                help="Masse unitaire de ce composant (en kg)",
-                format="%.3f",
-                step=0.01
+                help="Masse unitaire du composant en kg"
             )
         }
     )
@@ -335,6 +330,7 @@ if global_law == "Interpolation":
     st.write("*(Le coût unitaire pour une quantité N sera interpolé linéairement entre les points fournis, et restera constant en dehors de la plage définie.)*")
 
 # 4. Calcul des coûts (production = N véhicules) si le tableau n'est pas vide
+st.session_state.df_nomenclature = appliquer_reglages_sur_df(st.session_state.df_nomenclature.copy(), st.session_state.comp_params)
 if not edited_df.empty:
     df_calc = st.session_state.df_nomenclature.copy()
     # Conversion des colonnes Quantité et Prix en numériques (NaN -> 0)
