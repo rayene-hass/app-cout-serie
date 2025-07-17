@@ -184,7 +184,7 @@ try:
 except Exception as e:
     st.warning(f"Erreur lors du chargement des paramètres Google Sheets : {e}")
 
-2. Consultation et modification de la nomenclature
+# 2. Consultation et modification de la nomenclature
 st.markdown("## 2. Consultation et modification de la nomenclature")
 st.write("Vous pouvez éditer le tableau ci-dessous : ajouter/modifier/supprimer des composants si besoin.")
 
