@@ -127,7 +127,7 @@ if st.session_state.get("_validation_requested"):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v54 au top j'espère")
+st.markdown("Version: v55 au top j'espère")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -249,9 +249,8 @@ for col in numerical_columns:
 
 
 with st.form("nomenclature_edit_form"):
-    edited_df = st.data_editor(
+    edited_df_local = st.data_editor(
         df_display,
-        key="df_nomenclature_editor",  # 🔑 clé importante !
         num_rows="dynamic",
         use_container_width=True,
         hide_index=True,
@@ -267,7 +266,41 @@ with st.form("nomenclature_edit_form"):
 
     submitted = st.form_submit_button("Valider les modifications")
     if submitted:
-        st.session_state["_validation_requested"] = True
+        # Mise à jour directe
+        st.session_state.df_nomenclature = edited_df_local.copy()
+
+        # Reconstruit comp_params immédiatement
+        comp_params = {}
+        for _, row in edited_df_local.iterrows():
+            if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
+                continue
+            comp_key = get_comp_key(row)
+            comp_params[comp_key] = {
+                "law": str(row.get("Loi spécifique", "Global")),
+                "prix_matiere": row.get("Prix matière (€/kg)", None),
+                "cout_moule": row.get("Coût moule (€)", None),
+                "masse": row.get("Masse (kg)", None),
+            }
+            if comp_params[comp_key]["law"].lower() == "interpolation":
+                try:
+                    prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
+                    quantite = float(row.get("Quantité / Véhicule", 1.0))
+                    prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
+                except:
+                    prix_base = 1.0
+                comp_params[comp_key]["interp_points"] = [
+                    [1, round(prix_base, 2)],
+                    [1000, round(prix_base * 0.5, 2)]
+                ]
+
+        st.session_state.comp_params = comp_params
+
+        try:
+            sauvegarder_parametres_gsheet()
+            st.success(" Modifications sauvegardées dans Google Sheets.")
+        except Exception as e:
+            st.error(f" Erreur de sauvegarde : {e}")
+
         st.rerun()
 
 
