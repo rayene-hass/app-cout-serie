@@ -228,6 +228,8 @@ with st.form(key="edit_form"):
             )
         }
     )
+    edited_df = edited_df.copy()
+    _ = edited_df.shape
     submit = st.form_submit_button("Valider les modifications")
     
     if submit:
