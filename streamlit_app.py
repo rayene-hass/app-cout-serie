@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v120 j'u crois")
+st.markdown("Version: v121 jen ai marre")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -204,6 +204,7 @@ for col in numerical_columns:
 
 
 with st.form(key="edit_form"):
+    st.caption(" Modifiez les valeurs dans le tableau, puis cliquez sur le bouton ci-dessous pour valider.")
     edited_df = st.data_editor(
         df_display,
         num_rows="dynamic",
@@ -228,7 +229,8 @@ with st.form(key="edit_form"):
             )
         }
     )
-    submit = st.form_submit_button("Valider les modifications")
+    st.form_submit_button("Préparer la validation", disabled=True)
+submit = st.button("Valider les modifications")
 if submit:
     st.session_state.df_nomenclature = edited_df
 
