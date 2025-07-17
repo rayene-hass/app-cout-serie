@@ -82,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v41")
+st.markdown("Version: v50")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -190,72 +190,64 @@ st.markdown("## 2. Consultation et modification de la nomenclature")
 st.write("Vous pouvez éditer le tableau ci-dessous : ajouter/modifier/supprimer des composants si besoin.")
 st.write("- **Loi spécifique** : vous pouvez définir une loi d’interpolation personnalisée (quantité → prix unitaire) pour certains composants si vous disposez de devis ou d’historiques.")
 st.write("- **Masse (kg), Prix matière (€/kg), Coût moule (€)** : pour les composants **moulés** (fournis par *Formes & Volumes* ou *Stratiforme Industries*), renseignez ces valeurs pour un calcul de coût unitaire basé sur la matière et l'amortissement du moule.")
+# Note explicative pour les composants moulés
 st.info("Pour les composants moulés, le coût unitaire sera calculé comme : **Prix matière × Masse unitaire + Coût moule ÷ Quantité totale produite**. Veillez à renseigner ces champs pour ces composants.")
 
+# Affichage du tableau éditable dans un formulaire pour valider les modifications en une fois
 df_display = df.copy()
+
 numerical_columns = ["Prix matière (€/kg)", "Coût moule (€)", "Masse (kg)"]
 for col in numerical_columns:
     if col in df_display.columns:
         df_display[col] = pd.to_numeric(df_display[col], errors='coerce')
         df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
-with st.form(key="edit_form"):
-    edited_df = st.data_editor(
-        df_display,
-        num_rows="dynamic",
-        use_container_width=True,
-        hide_index=True,
-        column_config={
-            "Loi spécifique": st.column_config.SelectboxColumn(
-                "Loi spécifique",
-                options=["Global", "Interpolation"]
-            ),
-            "Prix matière (€/kg)": st.column_config.NumberColumn(
-                "Prix matière (€/kg)",
-                help="Prix de la matière première en € par kg"
-            ),
-            "Coût moule (€)": st.column_config.NumberColumn(
-                "Coût moule (€)",
-                help="Coût du moule (€) pour ce composant (investissement outillage)"
-            ),
-            "Masse (kg)": st.column_config.NumberColumn(
-                "Masse (kg)",
-                help="Masse unitaire du composant en kg"
-            )
-        }
-    )
-    submit = st.form_submit_button("Valider les modifications")
 
-if submit:
+edited_df = st.data_editor(
+    df_display,
+    key="df_nomenclature_editor",  # 🔑 clé importante !
+    num_rows="dynamic",
+    use_container_width=True,
+    hide_index=True,
+    column_config={
+        "Loi spécifique": st.column_config.SelectboxColumn(
+            "Loi spécifique", options=["Global", "Interpolation"]
+        ),
+        "Prix matière (€/kg)": st.column_config.NumberColumn("Prix matière (€/kg)"),
+        "Coût moule (€)": st.column_config.NumberColumn("Coût moule (€)"),
+        "Masse (kg)": st.column_config.NumberColumn("Masse (kg)")
+    }
+)
+
+if st.button("Valider les modifications"):  # 🔁 Plus de formulaire, un simple bouton
     st.session_state.df_nomenclature = edited_df
 
-    new_params = {}
+    # Synchronisation comp_params
+    st.session_state.comp_params = {}
     for _, row in edited_df.iterrows():
         if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
             continue
 
         comp_key = get_comp_key(row)
-        new_params[comp_key] = {
+        st.session_state.comp_params[comp_key] = {
             "law": str(row.get("Loi spécifique", "Global")),
             "prix_matiere": row.get("Prix matière (€/kg)", None),
             "cout_moule": row.get("Coût moule (€)", None),
             "masse": row.get("Masse (kg)", None)
         }
 
-        if new_params[comp_key]["law"].lower() == "interpolation":
-            if "interp_points" not in st.session_state.comp_params.get(comp_key, {}):
+        if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
+            if "interp_points" not in st.session_state.comp_params[comp_key]:
                 try:
                     prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
                     quantite = float(row.get("Quantité / Véhicule", 1.0))
                     prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
                 except:
                     prix_base = 1.0
-                new_params[comp_key]["interp_points"] = [
+                st.session_state.comp_params[comp_key]["interp_points"] = [
                     [1, round(prix_base, 2)],
                     [1000, round(prix_base * 0.5, 2)]
                 ]
-
-    st.session_state.comp_params.update(new_params)
 
     try:
         sauvegarder_parametres_gsheet()
@@ -264,6 +256,8 @@ if submit:
         st.error(f"Erreur lors de la sauvegarde : {e}")
 
 
+else:
+    edited_df = st.session_state.df_nomenclature
 
 
 # 3. Choix du scénario de production
@@ -300,12 +294,14 @@ if global_law == "Interpolation":
             # Table des points d'interpolation éditable
             interp_df = st.data_editor(
                 st.session_state.interp_points,
+                key="interp_points_global_editor",  
                 num_rows="dynamic", use_container_width=True, hide_index=True,
                 column_config={
                     "Quantité": st.column_config.NumberColumn("Quantité", min_value=1, step=1),
                     "Facteur coût unitaire": st.column_config.NumberColumn("Facteur coût unitaire", min_value=0.0, max_value=1.0, step=0.01)
                 }
             )
+
             # Conseils d'utilisation
             st.markdown("*(Exemple : 1 → 1.0 signifie un coût de base à 1 unité; 1000 → 0.5 signifie un coût unitaire réduit à 50% du prix de base à 1000 unités.)*")
             if st.button("Enregistrer", key="save_interp_points"):
@@ -528,6 +524,7 @@ if not edited_df.empty:
                     df_interp = pd.DataFrame(interp, columns=["Quantité", "Prix unitaire (€)"])
                     df_interp_edited = st.data_editor(
                         df_interp,
+                        key=f"interp_editor_{comp_key}",  # 🔑 ajout de clé unique
                         num_rows="dynamic",
                         use_container_width=True,
                         hide_index=True,
@@ -536,6 +533,7 @@ if not edited_df.empty:
                             "Prix unitaire (€)": st.column_config.NumberColumn("Prix unitaire (€)", min_value=0.0, step=0.01),
                         }
                     )
+
                     if st.button("Valider", key="val_interp_points_global_popup"):
                         st.session_state.comp_params[comp_key]["interp_points"] = df_interp_edited.dropna().sort_values("Quantité").values.tolist()
 
