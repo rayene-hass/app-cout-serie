@@ -2,4 +2,5 @@ streamlit
 pandas
 gspread
 google-auth
-streamlit>=1.30
+streamlit==1.47.0
+
