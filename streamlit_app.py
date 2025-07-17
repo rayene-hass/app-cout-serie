@@ -127,7 +127,7 @@ if st.session_state.get("_validation_requested"):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v52 au top j'espère")
+st.markdown("Version: v53 au top j'espère")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -248,25 +248,28 @@ for col in numerical_columns:
         df_display[col] = df_display[col].apply(lambda x: None if pd.isna(x) else float(x))
 
 
-edited_df = st.data_editor(
-    df_display,
-    key="df_nomenclature_editor",  # 🔑 clé importante !
-    num_rows="dynamic",
-    use_container_width=True,
-    hide_index=True,
-    column_config={
-        "Loi spécifique": st.column_config.SelectboxColumn(
-            "Loi spécifique", options=["Global", "Interpolation"]
-        ),
-        "Prix matière (€/kg)": st.column_config.NumberColumn("Prix matière (€/kg)"),
-        "Coût moule (€)": st.column_config.NumberColumn("Coût moule (€)"),
-        "Masse (kg)": st.column_config.NumberColumn("Masse (kg)")
-    }
-)
+with st.form("nomenclature_edit_form"):
+    edited_df = st.data_editor(
+        df_display,
+        key="df_nomenclature_editor",  # 🔑 clé importante !
+        num_rows="dynamic",
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Loi spécifique": st.column_config.SelectboxColumn(
+                "Loi spécifique", options=["Global", "Interpolation"]
+            ),
+            "Prix matière (€/kg)": st.column_config.NumberColumn("Prix matière (€/kg)"),
+            "Coût moule (€)": st.column_config.NumberColumn("Coût moule (€)"),
+            "Masse (kg)": st.column_config.NumberColumn("Masse (kg)")
+        }
+    )
 
-if st.button("Valider les modifications"):
-    st.session_state["_validation_requested"] = True
-    st.rerun()
+    submitted = st.form_submit_button("Valider les modifications")
+    if submitted:
+        st.session_state["_validation_requested"] = True
+        st.rerun()
+
 
 
 # 3. Choix du scénario de production
