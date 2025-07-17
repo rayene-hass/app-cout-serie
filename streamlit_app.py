@@ -82,11 +82,6 @@ if st.session_state.get("_validation_requested"):
 
     edited_df = st.session_state.get("df_nomenclature_editor", None)
 
-    if not isinstance(edited_df, pd.DataFrame):
-        st.warning("Aucune modification valide détectée. Veuillez attendre une seconde après avoir modifié une cellule avant de valider.")
-        st.session_state["_validation_requested"] = False
-        st.stop()
-
     st.session_state.df_nomenclature = edited_df
 
     # Synchronisation comp_params
