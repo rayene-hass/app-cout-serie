@@ -69,33 +69,14 @@ def sauvegarder_parametres_gsheet():
 def get_comp_key(row):
         return f"{row.get('Ensemble','')}/{row.get('Sous-Ensemble','')}/{row.get('Composant','')}/{row.get('Fournisseur','')}".strip().lower()
 
-def appliquer_reglages_sur_df(df):
-    
-    if "comp_params" not in st.session_state:
-        return df  # Rien à appliquer
-
-    comp_params = st.session_state.comp_params
-
-    df = df.copy()
-
-    for i, row in df.iterrows():
-        comp_key = get_comp_key(row)
-        params = comp_params.get(comp_key)
-        if not params:
-            continue
-
-        # Injection des valeurs dans le df
-        df.at[i, "Loi spécifique"] = params.get("law", row.get("Loi spécifique"))
-
-        if params.get("prix_matiere") is not None:
-            df.at[i, "Prix matière (€/kg)"] = params["prix_matiere"]
-        if params.get("cout_moule") is not None:
-            df.at[i, "Coût moule (€)"] = params["cout_moule"]
-        if params.get("masse") is not None:
-            df.at[i, "Masse (kg)"] = params["masse"]
-
+def appliquer_reglages_sur_df(df, comp_params):
+    for comp_key, params in comp_params.items():
+        mask = df.apply(lambda row: get_comp_key(row) == comp_key, axis=1)
+        df.loc[mask, "Prix matière (€/kg)"] = params.get("prix_matiere", None)
+        df.loc[mask, "Coût moule (€)"] = params.get("cout_moule", None)
+        df.loc[mask, "Masse (kg)"] = params.get("masse", None)
+        df.loc[mask, "Loi spécifique"] = params.get("law", "Global")
     return df
-
 
 
 
@@ -197,13 +178,7 @@ try:
     st.session_state.json_loaded = True
 
     # Mise à jour de la nomenclature avec les réglages
-    for comp_key, params in comp_params.items():
-        mask = df.apply(lambda row: f"{row.get('Ensemble','')}/{row.get('Sous-Ensemble','')}/{row.get('Composant','')}/{row.get('Fournisseur','')}".strip().lower() == comp_key, axis=1)
-        df.loc[mask, "Prix matière (€/kg)"] = params.get("prix_matiere", None)
-        df.loc[mask, "Coût moule (€)"] = params.get("cout_moule", None)
-        df.loc[mask, "Masse (kg)"] = params.get("masse", None)
-        df.loc[mask, "Loi spécifique"] = params.get("law", "Global")
-
+    df = appliquer_reglages_sur_df(df, comp_params)
     st.success("Paramètres rechargés depuis Google Sheets !")
 
 except Exception as e:
@@ -341,8 +316,9 @@ if global_law == "Interpolation":
     st.write("*(Le coût unitaire pour une quantité N sera interpolé linéairement entre les points fournis, et restera constant en dehors de la plage définie.)*")
 
 # 4. Calcul des coûts (production = N véhicules) si le tableau n'est pas vide
+st.session_state.df_nomenclature = appliquer_reglages_sur_df(st.session_state.df_nomenclature.copy(), st.session_state.comp_params)
 if not edited_df.empty:
-    df_calc = appliquer_reglages_sur_df(st.session_state.df_nomenclature)
+    df_calc = st.session_state.df_nomenclature.copy()
     # Conversion des colonnes Quantité et Prix en numériques (NaN -> 0)
     df_calc["Quantité / Véhicule"] = pd.to_numeric(df_calc["Quantité / Véhicule"], errors='coerce').fillna(0)
     df_calc["Prix Effectif / Véhicule"] = pd.to_numeric(df_calc["Prix Effectif / Véhicule"], errors='coerce').fillna(0)
