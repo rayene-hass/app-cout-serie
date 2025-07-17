@@ -79,52 +79,55 @@ def appliquer_reglages_sur_df(df, comp_params):
     return df
 
 if st.session_state.get("_validation_requested"):
-    if "df_nomenclature_editor" not in st.session_state:
-        st.warning("Aucune modification détectée.")
+
+    edited_df = st.session_state.get("df_nomenclature_editor", None)
+
+    if not isinstance(edited_df, pd.DataFrame):
+        st.warning("Aucune modification valide détectée. Veuillez attendre une seconde après avoir modifié une cellule avant de valider.")
         st.session_state["_validation_requested"] = False
         st.stop()
 
-    edited_df = st.session_state.get("df_nomenclature_editor")
-    if edited_df is not None:
-        st.session_state.df_nomenclature = edited_df
+    st.session_state.df_nomenclature = edited_df
 
-        # Synchronisation comp_params
-        st.session_state.comp_params = {}
-        for _, row in edited_df.iterrows():
-            if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
-                continue
-            comp_key = get_comp_key(row)
-            st.session_state.comp_params[comp_key] = {
-                "law": str(row.get("Loi spécifique", "Global")),
-                "prix_matiere": row.get("Prix matière (€/kg)", None),
-                "cout_moule": row.get("Coût moule (€)", None),
-                "masse": row.get("Masse (kg)", None)
-            }
-            if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
-                if "interp_points" not in st.session_state.comp_params[comp_key]:
-                    try:
-                        prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
-                        quantite = float(row.get("Quantité / Véhicule", 1.0))
-                        prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
-                    except:
-                        prix_base = 1.0
-                    st.session_state.comp_params[comp_key]["interp_points"] = [
-                        [1, round(prix_base, 2)],
-                        [1000, round(prix_base * 0.5, 2)]
-                    ]
+    # Synchronisation comp_params
+    st.session_state.comp_params = {}
+    for _, row in edited_df.iterrows():
+        if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
+            continue
+        comp_key = get_comp_key(row)
+        st.session_state.comp_params[comp_key] = {
+            "law": str(row.get("Loi spécifique", "Global")),
+            "prix_matiere": row.get("Prix matière (€/kg)", None),
+            "cout_moule": row.get("Coût moule (€)", None),
+            "masse": row.get("Masse (kg)", None)
+        }
+        if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
+            if "interp_points" not in st.session_state.comp_params[comp_key]:
+                try:
+                    prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
+                    quantite = float(row.get("Quantité / Véhicule", 1.0))
+                    prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
+                except:
+                    prix_base = 1.0
+                st.session_state.comp_params[comp_key]["interp_points"] = [
+                    [1, round(prix_base, 2)],
+                    [1000, round(prix_base * 0.5, 2)]
+                ]
 
-        try:
-            sauvegarder_parametres_gsheet()
-            st.success("Modifications sauvegardées dans Google Sheets !")
-        except Exception as e:
-            st.error(f"Erreur lors de la sauvegarde : {e}")
+    try:
+        sauvegarder_parametres_gsheet()
+        st.success("Modifications sauvegardées dans Google Sheets !")
+    except Exception as e:
+        st.error(f"Erreur lors de la sauvegarde : {e}")
+
     st.session_state["_validation_requested"] = False
+
 
 
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v51 au top j'espère")
+st.markdown("Version: v52 au top j'espère")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
