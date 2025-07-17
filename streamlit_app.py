@@ -5,7 +5,6 @@ import io
 import json
 import gspread
 from google.oauth2.service_account import Credentials
-import json
 
 def sauvegarder_parametres_gsheet():
     scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
