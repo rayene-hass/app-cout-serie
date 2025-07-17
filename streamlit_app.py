@@ -262,7 +262,7 @@ if submit:
     try:
         sauvegarder_parametres_gsheet()
         st.success("Modifications sauvegardées dans Google Sheets !")
-        st.experimental_rerun()
+        st.rerun()
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
 
