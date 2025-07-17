@@ -74,7 +74,7 @@ def get_comp_key(row):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v22")
+st.markdown("Version: v23")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -115,7 +115,7 @@ def charger_nomenclature_gsheet():
         "Masse unitaire", "Masse (kg)", "Prix matière (€/kg)",
         "Coût moule (€)", "Prix Effectif / Véhicule", "Quantité / Véhicule"
     ]
-    
+
     for col in colonnes_numeriques:
         if col in df.columns:
             df[col] = (
@@ -127,7 +127,7 @@ def charger_nomenclature_gsheet():
                 .str.strip()
             )
             df[col] = pd.to_numeric(df[col], errors="coerce")
-    
+
     return df
 
 @st.cache_data(ttl=10)
@@ -137,7 +137,7 @@ def charger_reglages_gsheet():
     client = gspread.authorize(creds)
     sheet = client.open_by_key(st.secrets["sheets"]["spreadsheet_id"])
     worksheet = sheet.worksheet(st.secrets["sheets"]["worksheet_reglages"])
-    
+
     records = worksheet.get_all_records()
 
     # Reconstruction des paramètres
@@ -181,7 +181,7 @@ try:
 
 except Exception as e:
     st.warning(f"Erreur lors du chargement des paramètres Google Sheets : {e}")
-        
+
 
 # 2. Consultation et modification de la nomenclature
 st.markdown("## 2. Consultation et modification de la nomenclature")
@@ -249,6 +249,7 @@ if submit:
         st.success("Modifications sauvegardées dans Google Sheets !")
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
+
 else:
     edited_df = st.session_state.df_nomenclature
 
@@ -321,11 +322,11 @@ if not edited_df.empty:
     df_calc["Masse (kg)"] = pd.to_numeric(df_calc["Masse (kg)"], errors='coerce')
     df_calc["Prix matière (€/kg)"] = pd.to_numeric(df_calc["Prix matière (€/kg)"], errors='coerce')
     df_calc["Coût moule (€)"] = pd.to_numeric(df_calc["Coût moule (€)"], errors='coerce')
-    
+
     # Fonction utilitaire pour générer une clé unique identifiant un composant (pour stockage des paramètres spécifiques)
     def get_comp_key(row):
         return f"{row.get('Ensemble','')}/{row.get('Sous-Ensemble','')}/{row.get('Composant','')}/{row.get('Fournisseur','')}".strip().lower()
-    
+
     results = []
     missing_data_parts = []  # liste des composants moulés avec données incomplètes
     total_per_vehicle = 0.0
@@ -457,7 +458,7 @@ if not edited_df.empty:
                 st.rerun()
     else:
         st.write("*(Aucun composant avec loi spécifique nécessitant un ajustement de paramètres.)*")
-    
+
     if st.session_state.popup_open_for is not None:
         comp_key = st.session_state.popup_open_for
         comp_name = st.session_state.popup_comp_name
@@ -524,7 +525,7 @@ if not edited_df.empty:
                     )
                     if st.button("Valider", key="val_interp_points_global_popup"):
                         st.session_state.comp_params[comp_key]["interp_points"] = df_interp_edited.dropna().sort_values("Quantité").values.tolist()
-                        
+
                         # On sauvegarde les paramètres
                         try:
                             sauvegarder_parametres_gsheet()
