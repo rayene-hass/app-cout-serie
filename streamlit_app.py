@@ -69,11 +69,39 @@ def sauvegarder_parametres_gsheet():
 def get_comp_key(row):
         return f"{row.get('Ensemble','')}/{row.get('Sous-Ensemble','')}/{row.get('Composant','')}/{row.get('Fournisseur','')}".strip().lower()
 
+def appliquer_reglages_sur_df(df):
+    
+    if "comp_params" not in st.session_state:
+        return df  # Rien à appliquer
+
+    comp_params = st.session_state.comp_params
+
+    df = df.copy()
+
+    for i, row in df.iterrows():
+        comp_key = get_comp_key(row)
+        params = comp_params.get(comp_key)
+        if not params:
+            continue
+
+        # Injection des valeurs dans le df
+        df.at[i, "Loi spécifique"] = params.get("law", row.get("Loi spécifique"))
+
+        if params.get("prix_matiere") is not None:
+            df.at[i, "Prix matière (€/kg)"] = params["prix_matiere"]
+        if params.get("cout_moule") is not None:
+            df.at[i, "Coût moule (€)"] = params["cout_moule"]
+        if params.get("masse") is not None:
+            df.at[i, "Masse (kg)"] = params["masse"]
+
+    return df
+
+
 
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v23")
+st.markdown("Version: v24")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -314,7 +342,7 @@ if global_law == "Interpolation":
 
 # 4. Calcul des coûts (production = N véhicules) si le tableau n'est pas vide
 if not edited_df.empty:
-    df_calc = st.session_state.df_nomenclature.copy()
+    df_calc = appliquer_reglages_sur_df(st.session_state.df_nomenclature)
     # Conversion des colonnes Quantité et Prix en numériques (NaN -> 0)
     df_calc["Quantité / Véhicule"] = pd.to_numeric(df_calc["Quantité / Véhicule"], errors='coerce').fillna(0)
     df_calc["Prix Effectif / Véhicule"] = pd.to_numeric(df_calc["Prix Effectif / Véhicule"], errors='coerce').fillna(0)
