@@ -152,13 +152,7 @@ def charger_reglages_gsheet():
     comp_params = {}
     for ligne in records:
         comp_key = ligne["comp_key"].strip().lower()
-        masse = ligne.get("masse", None)
-        try:
-            masse = str(masse).replace(",", ".").replace(" ", "").strip()
-            masse = float(masse)
-        except:
-            masse = None
-            
+        
         try:
             interp_points = json.loads(ligne["interp_points"])
         except Exception:
