@@ -72,6 +72,9 @@ def get_comp_key(row):
 def appliquer_reglages_sur_df(df, comp_params):
     for comp_key, params in comp_params.items():
         mask = df.apply(lambda row: get_comp_key(row) == comp_key, axis=1)
+        masse = params.get("masse", None)
+        if isinstance(masse, (int, float)):
+            masse = masse / 100
         df.loc[mask, "Prix matière (€/kg)"] = params.get("prix_matiere", None)
         df.loc[mask, "Coût moule (€)"] = params.get("cout_moule", None)
         df.loc[mask, "Masse (kg)"] = params.get("masse", None)
@@ -82,7 +85,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v06")
+st.markdown("Version: v07")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
