@@ -228,13 +228,9 @@ with st.form(key="edit_form"):
             )
         }
     )
-    st.text_input("Force refresh", key="__refresh_trigger__", label_visibility="collapsed")
     submit = st.form_submit_button("Valider les modifications")
 if submit:
-    st.session_state["__refresh_trigger__"] = "triggered"
-    edited_df = edited_df.copy(deep=True)
-    edited_df = edited_df.drop(columns=["__sync__"], errors="ignore")
-
+    st.session_state["flush_hack"] = st.session_state.get("flush_hack", 0) + 1
     st.session_state.df_nomenclature = edited_df
 
     # Synchronisation de comp_params avec normalisation des clés
@@ -269,7 +265,6 @@ if submit:
         st.success("Modifications sauvegardées dans Google Sheets !")
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
-
 
 
 
