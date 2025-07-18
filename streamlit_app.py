@@ -47,13 +47,16 @@ def sauvegarder_parametres_gsheet():
                 return val if math.isfinite(val) else None
             except:
                 return None
+        masse = clean_numeric(row.get("Masse (kg)", None))
+        if masse is not None:
+            masse = masse / 100 
 
         sauvegarde.append({
             "comp_key": comp_key,
             "law": row.get("Loi spécifique", "Global"),
             "prix_matiere": clean_numeric(row.get("Prix matière (€/kg)", None)),
             "cout_moule": clean_numeric(row.get("Coût moule (€)", None)),
-            "masse": clean_numeric(row.get("Masse (kg)", None)),
+            "masse": masse,
             "interp_points": json.dumps(cleaned_points)
         })
 
@@ -72,9 +75,6 @@ def get_comp_key(row):
 def appliquer_reglages_sur_df(df, comp_params):
     for comp_key, params in comp_params.items():
         mask = df.apply(lambda row: get_comp_key(row) == comp_key, axis=1)
-        masse = params.get("masse", None)
-        if isinstance(masse, (int, float)):
-            masse = masse / 100
         df.loc[mask, "Prix matière (€/kg)"] = params.get("prix_matiere", None)
         df.loc[mask, "Coût moule (€)"] = params.get("cout_moule", None)
         df.loc[mask, "Masse (kg)"] = params.get("masse", None)
@@ -85,7 +85,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v07")
+st.markdown("Version: v08")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -125,7 +125,7 @@ def charger_nomenclature_gsheet():
     colonnes_numeriques = [
         "Masse unitaire", "Masse (kg)", "Prix matière (€/kg)",
         "Coût moule (€)", "Prix Effectif / Véhicule", "Quantité / Véhicule"
-    ]
+    ]    
 
     for col in colonnes_numeriques:
         if col in df.columns:
