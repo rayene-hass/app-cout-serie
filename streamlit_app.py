@@ -231,8 +231,6 @@ with st.form(key="edit_form"):
     submit = st.form_submit_button("Valider les modifications")
   
     if submit:
-        import copy
-        edited_df = copy.deepcopy(edited_df)
         st.session_state.df_nomenclature = edited_df
     
         # Synchronisation de comp_params avec normalisation des clés
@@ -261,6 +259,9 @@ with st.form(key="edit_form"):
                         [1, round(prix_base, 2)],
                         [1000, round(prix_base * 0.5, 2)]
                     ]
+        if len(st.session_state.comp_params) > 0:
+        first_key = next(iter(st.session_state.comp_params))
+        st.session_state.comp_params[first_key]["law"] = st.session_state.comp_params[first_key]["law"]
     
         try:
             sauvegarder_parametres_gsheet()
