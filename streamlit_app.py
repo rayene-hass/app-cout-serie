@@ -135,8 +135,9 @@ def charger_nomenclature_gsheet():
                 .str.strip()
             )
             df[col] = pd.to_numeric(df[col], errors="coerce")
-            if col.lower().startswith("masse") and df[col].max() > 100:
-                df[col] = df[col] / 100
+
+    if "Masse (kg)" in df.columns and df["Masse (kg)"].max() > 100:
+        df["Masse (kg)"] = df["Masse (kg)"] / 100
 
     return df
 
