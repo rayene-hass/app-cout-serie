@@ -47,16 +47,13 @@ def sauvegarder_parametres_gsheet():
                 return val if math.isfinite(val) else None
             except:
                 return None
-        masse = clean_numeric(row.get("Masse (kg)", None))
-        if masse is not None:
-            masse = masse / 100 
 
         sauvegarde.append({
             "comp_key": comp_key,
             "law": row.get("Loi spécifique", "Global"),
             "prix_matiere": clean_numeric(row.get("Prix matière (€/kg)", None)),
             "cout_moule": clean_numeric(row.get("Coût moule (€)", None)),
-            "masse": masse,
+            "masse": clean_numeric(row.get("Masse (kg)", None)),
             "interp_points": json.dumps(cleaned_points)
         })
 
@@ -85,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v08")
+st.markdown("Version: v09")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -160,6 +157,18 @@ def charger_reglages_gsheet():
             interp_points = json.loads(ligne["interp_points"])
         except Exception:
             interp_points = []
+
+        def to_float(val):
+            try:
+                val = str(val).replace(",", ".").replace(" ", "")
+                return float(val)
+            except:
+                return None
+
+        masse = to_float(ligne.get("masse"))
+        if masse is not None:
+            masse = masse / 100
+        
         comp_params[comp_key] = {
             "law": ligne.get("law", "Global"),
             "prix_matiere": ligne.get("prix_matiere"),
