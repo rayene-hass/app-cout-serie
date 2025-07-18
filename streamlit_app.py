@@ -229,44 +229,44 @@ with st.form(key="edit_form"):
         }
     )
     submit = st.form_submit_button("Valider les modifications")
-
-import copy
-if submit:
-    edited_df = copy.deepcopy(edited_df)
-    st.session_state.df_nomenclature = edited_df
-
-    # Synchronisation de comp_params avec normalisation des clés
-    st.session_state.comp_params = {}
-    for _, row in edited_df.iterrows():
-        if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
-            continue  # Ignorer lignes vides
-
-        comp_key = get_comp_key(row)
-        st.session_state.comp_params[comp_key] = {
-            "law": str(row.get("Loi spécifique", "Global")),
-            "prix_matiere": row.get("Prix matière (€/kg)", None),
-            "cout_moule": row.get("Coût moule (€)", None),
-            "masse": row.get("Masse (kg)", None)
-        }
-
-        if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
-            if "interp_points" not in st.session_state.comp_params[comp_key]:
-                try:
-                    prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
-                    quantite = float(row.get("Quantité / Véhicule", 1.0))
-                    prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
-                except:
-                    prix_base = 1.0
-                st.session_state.comp_params[comp_key]["interp_points"] = [
-                    [1, round(prix_base, 2)],
-                    [1000, round(prix_base * 0.5, 2)]
-                ]
-
-    try:
-        sauvegarder_parametres_gsheet()
-        st.success("Modifications sauvegardées dans Google Sheets !")
-    except Exception as e:
-        st.error(f"Erreur lors de la sauvegarde : {e}")
+  
+    if submit:
+        import copy
+        edited_df = copy.deepcopy(edited_df)
+        st.session_state.df_nomenclature = edited_df
+    
+        # Synchronisation de comp_params avec normalisation des clés
+        st.session_state.comp_params = {}
+        for _, row in edited_df.iterrows():
+            if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
+                continue  # Ignorer lignes vides
+    
+            comp_key = get_comp_key(row)
+            st.session_state.comp_params[comp_key] = {
+                "law": str(row.get("Loi spécifique", "Global")),
+                "prix_matiere": row.get("Prix matière (€/kg)", None),
+                "cout_moule": row.get("Coût moule (€)", None),
+                "masse": row.get("Masse (kg)", None)
+            }
+    
+            if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
+                if "interp_points" not in st.session_state.comp_params[comp_key]:
+                    try:
+                        prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
+                        quantite = float(row.get("Quantité / Véhicule", 1.0))
+                        prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
+                    except:
+                        prix_base = 1.0
+                    st.session_state.comp_params[comp_key]["interp_points"] = [
+                        [1, round(prix_base, 2)],
+                        [1000, round(prix_base * 0.5, 2)]
+                    ]
+    
+        try:
+            sauvegarder_parametres_gsheet()
+            st.success("Modifications sauvegardées dans Google Sheets !")
+        except Exception as e:
+            st.error(f"Erreur lors de la sauvegarde : {e}")
 
 
 
