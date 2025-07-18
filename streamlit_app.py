@@ -157,18 +157,6 @@ def charger_reglages_gsheet():
             interp_points = json.loads(ligne["interp_points"])
         except Exception:
             interp_points = []
-
-        def to_float(val):
-            try:
-                val = str(val).replace(",", ".").replace(" ", "")
-                return float(val)
-            except:
-                return None
-
-        masse = to_float(ligne.get("masse"))
-        if masse is not None:
-            masse = masse / 100
-        
         comp_params[comp_key] = {
             "law": ligne.get("law", "Global"),
             "prix_matiere": ligne.get("prix_matiere"),
@@ -192,6 +180,7 @@ try:
 
     # Mise à jour de la nomenclature avec les réglages
     df = appliquer_reglages_sur_df(df, comp_params)
+    st.write("Masse après application des réglages :", df["Masse (kg)"])
     st.success("Paramètres rechargés depuis Google Sheets !")
 
 except Exception as e:
