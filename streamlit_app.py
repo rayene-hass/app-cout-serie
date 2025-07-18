@@ -231,14 +231,14 @@ with st.form(key="edit_form"):
     submit = st.form_submit_button("Valider les modifications")
 if submit:
     for comp_key, params in st.session_state.get("comp_params", {}).items():
-    if params.get("law", "").lower() == "interpolation" and "interp_points" in params:
-        # On ajoute temporairement +0.0001 à un point, puis on le re-retire
-        try:
-            params["interp_points"][0][1] += 0.0001
-            params["interp_points"][0][1] -= 0.0001
-            break  # on ne le fait que pour un seul composant
-        except:
-            pass
+        if params.get("law", "").lower() == "interpolation" and "interp_points" in params:
+            # On ajoute temporairement +0.0001 à un point, puis on le re-retire
+            try:
+                params["interp_points"][0][1] += 0.0001
+                params["interp_points"][0][1] -= 0.0001
+                break  # on ne le fait que pour un seul composant
+            except:
+                pass
     st.session_state.df_nomenclature = edited_df
 
     # Synchronisation de comp_params avec normalisation des clés
