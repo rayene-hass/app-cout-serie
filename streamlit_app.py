@@ -89,7 +89,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v03")
+st.markdown("Version: v04")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -142,6 +142,8 @@ def charger_nomenclature_gsheet():
                 .str.strip()
             )
             df[col] = pd.to_numeric(df[col], errors="coerce")
+    if "Masse (kg)" in df.columns:
+        df["Masse (kg)"] = df["Masse (kg)"] / 100
 
     return df
 
