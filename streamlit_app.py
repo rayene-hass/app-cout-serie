@@ -74,13 +74,6 @@ def appliquer_reglages_sur_df(df, comp_params):
         mask = df.apply(lambda row: get_comp_key(row) == comp_key, axis=1)
         df.loc[mask, "Prix matière (€/kg)"] = params.get("prix_matiere", None)
         df.loc[mask, "Coût moule (€)"] = params.get("cout_moule", None)
-        masse_brute = params.get("masse", None)
-        masse_corrigee = None
-        try:
-            if masse_brute is not None:
-                masse_corrigee = float(masse_brute) / 100
-        except Exception:
-            masse_corrigee = None
         df.loc[mask, "Masse (kg)"] = params.get("masse", None)
         df.loc[mask, "Loi spécifique"] = params.get("law", "Global")
     return df
@@ -89,7 +82,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v05")
+st.markdown("Version: v06")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -142,8 +135,6 @@ def charger_nomenclature_gsheet():
                 .str.strip()
             )
             df[col] = pd.to_numeric(df[col], errors="coerce")
-    if "Masse (kg)" in df.columns:
-        df["Masse (kg)"] = df["Masse (kg)"] / 100
 
     return df
 
@@ -161,6 +152,13 @@ def charger_reglages_gsheet():
     comp_params = {}
     for ligne in records:
         comp_key = ligne["comp_key"].strip().lower()
+        masse = ligne.get("masse", None)
+        try:
+            masse = str(masse).replace(",", ".").replace(" ", "").strip()
+            masse = float(masse)
+        except:
+            masse = None
+            
         try:
             interp_points = json.loads(ligne["interp_points"])
         except Exception:
