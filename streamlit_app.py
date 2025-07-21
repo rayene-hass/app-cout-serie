@@ -86,7 +86,7 @@ def appliquer_reglages_sur_df(df, comp_params):
 
 # Titre principal de l'application
 st.title("Estimation du coût de revient d’un véhicule en fonction de la quantité")
-st.markdown("Version: v010")
+st.markdown("Version: v011")
 
 # 1. Chargement de la nomenclature depuis Google Sheets
 
@@ -243,31 +243,37 @@ if submit:
     st.session_state.df_nomenclature = edited_df
 
     # Synchronisation de comp_params avec normalisation des clés
-    st.session_state.comp_params = {}
+    if "comp_params" not in st.session_state:
+        st.session_state.comp_params = {}
     for _, row in edited_df.iterrows():
         if pd.isna(row.get("Composant")) or str(row.get("Composant")).strip() == "":
             continue  # Ignorer lignes vides
 
         comp_key = get_comp_key(row)
-        st.session_state.comp_params[comp_key] = {
+        params = st.session_state.comp_params.get(comp_key, {})  # ne pas écraser si déjà existant
+        
+        # Mise à jour les champs éditables
+        params.update({
             "law": str(row.get("Loi spécifique", "Global")),
             "prix_matiere": row.get("Prix matière (€/kg)", None),
             "cout_moule": row.get("Coût moule (€)", None),
             "masse": row.get("Masse (kg)", None)
-        }
+        })
+    
+        if params.get("law", "").lower() == "interpolation" and "interp_points" not in params:
+            try:
+                prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
+                quantite = float(row.get("Quantité / Véhicule", 1.0))
+                prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
+            except:
+                prix_base = 1.0
+            params["interp_points"] = [
+                [1, round(prix_base, 2)],
+                [1000, round(prix_base * 0.5, 2)]
+            ]
+        
+        st.session_state.comp_params[comp_key] = params
 
-        if st.session_state.comp_params[comp_key]["law"].lower() == "interpolation":
-            if "interp_points" not in st.session_state.comp_params[comp_key]:
-                try:
-                    prix_effectif = float(row.get("Prix Effectif / Véhicule", 1.0))
-                    quantite = float(row.get("Quantité / Véhicule", 1.0))
-                    prix_base = prix_effectif / quantite if quantite > 0 else prix_effectif
-                except:
-                    prix_base = 1.0
-                st.session_state.comp_params[comp_key]["interp_points"] = [
-                    [1, round(prix_base, 2)],
-                    [1000, round(prix_base * 0.5, 2)]
-                ]
 
     try:
         sauvegarder_parametres_gsheet()
@@ -275,7 +281,7 @@ if submit:
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
 
-    # st.rerun()
+    st.rerun()
 
 # 3. Choix du scénario de production
 st.markdown("## 3. Choix du scénario de production")
