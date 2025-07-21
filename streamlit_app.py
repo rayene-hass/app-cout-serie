@@ -275,7 +275,7 @@ if submit:
     except Exception as e:
         st.error(f"Erreur lors de la sauvegarde : {e}")
 
-    st.rerun()
+    # st.rerun()
 
 # 3. Choix du scénario de production
 st.markdown("## 3. Choix du scénario de production")
